@@ -167,3 +167,5 @@ export interface Category {
     installHint?: string;
     excludedFromCheck: string[];
 }
+
+export type ColorScheme = 'default' | 'charcoal' | 'blueberry';

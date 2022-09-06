@@ -19,6 +19,7 @@ import {
     NumberInput,
     NumberInputField,
     NumberInputStepper,
+    Select,
     StackDivider,
     Switch,
     Tab,
@@ -34,6 +35,7 @@ import {
 import path from 'path';
 import { PropsWithChildren, ReactNode, memo, useCallback, useEffect, useState } from 'react';
 import { useContext } from 'use-context-selector';
+import { ColorScheme } from '../../common/common-types';
 import { ipcRenderer } from '../../common/safeIpc';
 import { SettingsContext } from '../contexts/SettingsContext';
 
@@ -99,12 +101,16 @@ const Toggle = memo(({ title, description, isDisabled, value, onToggle }: Toggle
 });
 
 const AppearanceSettings = memo(() => {
-    const { useSnapToGrid, useIsDarkMode, useAnimateChain } = useContext(SettingsContext);
+    const { useSnapToGrid, useIsDarkMode, useAnimateChain, useColorScheme } =
+        useContext(SettingsContext);
 
     const [isDarkMode, setIsDarkMode] = useIsDarkMode;
+    const [colorScheme, setColorScheme] = useColorScheme;
     const [animateChain, setAnimateChain] = useAnimateChain;
 
     const [isSnapToGrid, setIsSnapToGrid, snapToGridAmount, setSnapToGridAmount] = useSnapToGrid;
+
+    // const colorSchemes: ColorScheme[] = ['default', 'charcoal', 'blueberry'];
 
     return (
         <VStack
@@ -119,6 +125,15 @@ const AppearanceSettings = memo(() => {
                     setIsDarkMode((prev) => !prev);
                 }}
             />
+
+            <Select
+                value={colorScheme}
+                onChange={(event) => setColorScheme(event.target.value as ColorScheme)}
+            >
+                <option value="default">Default</option>
+                <option value="charcoal">Charcoal</option>
+                <option value="blueberry">Blueberry</option>
+            </Select>
 
             <Toggle
                 description="Enable animations that show the processing state of the chain."

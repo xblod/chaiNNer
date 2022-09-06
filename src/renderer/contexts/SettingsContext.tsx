@@ -1,7 +1,7 @@
 import { useColorMode } from '@chakra-ui/react';
 import React, { memo, useEffect } from 'react';
 import { createContext } from 'use-context-selector';
-import { SchemaId } from '../../common/common-types';
+import { ColorScheme, SchemaId } from '../../common/common-types';
 import { ipcRenderer } from '../../common/safeIpc';
 
 import { useAsyncEffect } from '../hooks/useAsyncEffect';
@@ -23,6 +23,7 @@ interface Settings {
     ];
     useStartupTemplate: readonly [string, React.Dispatch<React.SetStateAction<string>>];
     useIsDarkMode: readonly [boolean, React.Dispatch<React.SetStateAction<boolean>>];
+    useColorScheme: readonly [ColorScheme, React.Dispatch<React.SetStateAction<ColorScheme>>];
     useAnimateChain: readonly [boolean, React.Dispatch<React.SetStateAction<boolean>>];
     useDiscordRPC: readonly [boolean, React.Dispatch<React.SetStateAction<boolean>>];
 
@@ -46,15 +47,21 @@ export const SettingsProvider = memo(({ children }: React.PropsWithChildren<unkn
     const useCheckUpdOnStrtUp = useMemoArray(useLocalStorage('check-upd-on-strtup', true));
     const useStartupTemplate = useMemoArray(useLocalStorage('startup-template', ''));
 
+    // Appearance Settings
     const useIsDarkMode = useMemoArray(useLocalStorage('use-dark-mode', true));
-
     const { setColorMode } = useColorMode();
     const [isDarkMode] = useIsDarkMode;
     useEffect(() => {
         setColorMode(isDarkMode ? 'dark' : 'light');
-        document.documentElement.setAttribute('color-theme', 'charcoal');
-        document.documentElement.style.setProperty('--color-theme', 'charcoal');
     }, [setColorMode, isDarkMode]);
+
+    const useColorScheme = useMemoArray(
+        useLocalStorage<ColorScheme>('use-color-scheme', 'default')
+    );
+    const [colorScheme] = useColorScheme;
+    useEffect(() => {
+        document.documentElement.setAttribute('color-theme', colorScheme);
+    }, [colorScheme]);
 
     const useAnimateChain = useMemoArray(useLocalStorage('animate-chain', true));
 
@@ -93,6 +100,7 @@ export const SettingsProvider = memo(({ children }: React.PropsWithChildren<unkn
         useCheckUpdOnStrtUp,
         useStartupTemplate,
         useIsDarkMode,
+        useColorScheme,
         useAnimateChain,
         useDiscordRPC,
 

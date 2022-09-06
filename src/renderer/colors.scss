@@ -76,6 +76,21 @@
     }
 }
 
+:root[color-theme="blueberry"] {
+    $color-theme-var: "blueberry";
+    --gray-50: #f7fafc;
+    @for $i from 1 through 9 {
+        --gray-#{100 * $i}: #{get-color("gray-#{100 * $i}", $color-theme-var)};
+    }
+    @for $i from 1 through 8 {
+        --gray-#{(100 * $i) + 50}: #{color.mix(
+                get-color("gray-#{100 * $i}", $color-theme-var),
+                get-color("gray-#{100 * ($i + 1)}", $color-theme-var),
+                50%
+            )};
+    }
+}
+
 :root {
     /* color palette */
 
