@@ -52,6 +52,8 @@ export const SettingsProvider = memo(({ children }: React.PropsWithChildren<unkn
     const [isDarkMode] = useIsDarkMode;
     useEffect(() => {
         setColorMode(isDarkMode ? 'dark' : 'light');
+        document.documentElement.setAttribute('color-theme', 'charcoal');
+        document.documentElement.style.setProperty('--color-theme', 'charcoal');
     }, [setColorMode, isDarkMode]);
 
     const useAnimateChain = useMemoArray(useLocalStorage('animate-chain', true));
