@@ -48,6 +48,7 @@ codec_map = {
     "mkv": "libx264",
     "webm": "libvpx-vp9",
     "gif": "gif",
+    "png": "png",
 }
 
 
@@ -141,10 +142,10 @@ class VideoFrameIteratorFrameWriterNode(NodeBase):
                     )
                     .output(
                         video_save_path,
-                        pix_fmt="yuv420p",
+                        pix_fmt="rgb24" if video_type == "png" else "yuv420p",
                         r=fps,
                         crf=crf,
-                        preset=video_preset if video_preset != "none" else None,
+                        preset=video_preset,
                         vcodec=codec_map[video_type],
                     )
                     .overwrite_output()

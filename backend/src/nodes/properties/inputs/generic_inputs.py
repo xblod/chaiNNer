@@ -227,6 +227,7 @@ def VideoTypeDropdown() -> DropDownInput:
             {"option": "WEBM", "value": "webm"},
             {"option": "AVI", "value": "avi"},
             {"option": "GIF", "value": "gif"},
+            {"option": "PNG Sequence", "value": "png"},
             {"option": "None", "value": "none"},
         ],
     )
