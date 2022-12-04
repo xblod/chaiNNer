@@ -78,6 +78,8 @@ const STARTING_Z_INDEX = 50;
  *
  * However, with edges overlapping handles, this is not enough. There is additional fixing we need to do
  * to make sure handles are (almost) always on top of edges
+ * Basically, this means we need to make sure that any node connected to a node at a higher zIndex gets updated to that higher zIndex
+ * and that the edge is at
  */
 const updateZIndexes = (
     nodes: readonly Node<NodeData>[],
@@ -246,12 +248,14 @@ const updateZIndexes = (
         // Fix nodes connected to nodes inside iterators
         if (sourceNode?.parentNode) {
             if (targetNode) {
-                targetNode.zIndex = Math.max(sourceNode.zIndex ?? 0, edge.zIndex ?? 0);
+                targetNode.zIndex = Math.max(sourceNode.zIndex ?? 0, edge.zIndex ?? 0) + 1;
+                sourceNode.zIndex = Math.max(targetNode.zIndex, edge.zIndex ?? 0) + 1;
             }
         }
         if (targetNode?.parentNode) {
             if (sourceNode) {
-                sourceNode.zIndex = Math.max(targetNode.zIndex ?? 0, edge.zIndex ?? 0);
+                sourceNode.zIndex = Math.max(targetNode.zIndex ?? 0, edge.zIndex ?? 0) + 1;
+                targetNode.zIndex = Math.max(sourceNode.zIndex, edge.zIndex ?? 0) + 1;
             }
         }
     }
