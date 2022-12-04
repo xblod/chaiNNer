@@ -84,11 +84,12 @@ const updateZIndexes = (
     const relatedIterators = new Set<string>();
     /** Maps each iterator id to the relative position of the iterator in the node array */
     const iteratorIndexMap = new Map<string, number>();
-    const byId = new Map<string, Node<NodeData>>();
+    const nodesById = new Map<string, Node<NodeData>>();
+    const edgesById = new Map<string, Edge<EdgeData>>();
 
     // go through all nodes to collect some information
     for (const n of nodes) {
-        byId.set(n.id, n);
+        nodesById.set(n.id, n);
 
         if (n.type === 'iterator') {
             iteratorIndexMap.set(n.id, iteratorIndexMap.size);
@@ -148,18 +149,110 @@ const updateZIndexes = (
         }
     }
 
+    const nodesToAdjust = new Map<string, number>();
     // set the zIndex of all edges
     for (const e of edges) {
+        edgesById.set(e.id, e);
         let zIndex = Math.max(
-            byId.get(e.source)?.zIndex ?? STARTING_Z_INDEX,
-            byId.get(e.target)?.zIndex ?? STARTING_Z_INDEX
+            nodesById.get(e.source)?.zIndex ?? STARTING_Z_INDEX,
+            nodesById.get(e.target)?.zIndex ?? STARTING_Z_INDEX
         );
 
-        if (e.selected && zIndex < MIN_SELECTED_INDEX) {
-            zIndex += SELECTED_ADD;
+        const sourceNode = nodesById.get(e.source);
+        const targetNode = nodesById.get(e.target);
+
+        if (sourceNode && targetNode) {
+            if (e.selected && zIndex < MIN_SELECTED_INDEX) {
+                zIndex += SELECTED_ADD;
+                // If an edge is selected, make the connected nodes the same zIndex so that the handle stays above
+                if (sourceNode.type !== 'iterator') {
+                    // We need to wait until after the loop to adjust the zIndex
+                    nodesToAdjust.set(sourceNode.id, zIndex);
+                }
+                if (targetNode.type !== 'iterator') {
+                    // We need to wait until after the loop to adjust the zIndex
+                    nodesToAdjust.set(targetNode.id, zIndex);
+                }
+            } else if (sourceNode.selected || targetNode.selected) {
+                // If an edge is connected to a selected node, we need to make the other node it is connected to the same zIndex so that both handles stay above
+                if (targetNode.selected && targetNode.type !== 'iterator') {
+                    // We need to wait until after the loop to adjust the zIndex
+                    nodesToAdjust.set(sourceNode.id, zIndex);
+                }
+                if (sourceNode.selected && sourceNode.type !== 'iterator') {
+                    // We need to wait until after the loop to adjust the zIndex
+                    nodesToAdjust.set(targetNode.id, zIndex);
+                }
+            }
         }
 
         e.zIndex = zIndex - 1;
+    }
+
+    // Adjust the zIndex of the nodes that were connected to selected edges
+    // The reason we don't do this in the loop above is because we don't want to modify as we detect)
+    for (const [nodeId, zIndex] of nodesToAdjust.entries()) {
+        const node = nodesById.get(nodeId);
+        if (node) {
+            node.zIndex = zIndex;
+        }
+    }
+
+    // Adjust any iterators connected to edges to be above the edges
+    for (const edge of edges) {
+        const sourceNode = nodesById.get(edge.source);
+        const targetNode = nodesById.get(edge.target);
+        if (sourceNode?.type === 'iterator' || targetNode?.type === 'iterator') {
+            const maxZIndex = Math.max(
+                edge.zIndex ?? 0,
+                sourceNode?.zIndex ?? 0,
+                targetNode?.zIndex ?? 0
+            );
+            if (sourceNode) {
+                sourceNode.zIndex = maxZIndex + 1;
+            }
+            if (targetNode) {
+                targetNode.zIndex = maxZIndex + 1;
+            }
+        }
+    }
+    // Fix the iterator children (nodes) to be above the iterator
+    for (const node of nodes) {
+        if (node.parentNode) {
+            const iterator = nodesById.get(node.parentNode);
+            if (iterator && (node.zIndex || 0) <= (iterator.zIndex || 0)) {
+                node.zIndex =
+                    Math.max(node.zIndex || 0, iterator.zIndex || 0) +
+                    1 +
+                    (node.selected ? SELECTED_ADD : 0);
+            }
+        }
+    }
+    // Fix the iterator children (edges) to be above the iterator
+    for (const edge of edges) {
+        const sourceNode = nodesById.get(edge.source);
+        const targetNode = nodesById.get(edge.target);
+        const edgeParent = sourceNode?.parentNode ?? targetNode?.parentNode;
+        if (edgeParent) {
+            const iterator = nodesById.get(edgeParent);
+            if (iterator && (edge.zIndex || 0) <= (iterator.zIndex || 0)) {
+                edge.zIndex =
+                    Math.max(edge.zIndex || 0, iterator.zIndex || 0) +
+                    1 +
+                    (edge.selected ? SELECTED_ADD : 0);
+            }
+        }
+        // Fix nodes connected to nodes inside iterators
+        if (sourceNode?.parentNode) {
+            if (targetNode) {
+                targetNode.zIndex = Math.max(sourceNode.zIndex ?? 0, edge.zIndex ?? 0);
+            }
+        }
+        if (targetNode?.parentNode) {
+            if (sourceNode) {
+                sourceNode.zIndex = Math.max(targetNode.zIndex ?? 0, edge.zIndex ?? 0);
+            }
+        }
     }
 };
 
