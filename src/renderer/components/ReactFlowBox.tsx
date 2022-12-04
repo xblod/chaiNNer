@@ -75,6 +75,9 @@ const STARTING_Z_INDEX = 50;
  * "the layer below", but "in between this layer and the below layer".
  * The only exception is when the edge is selected but neither its not its target are selected.
  * In this case, the edge will to be in the highest selected layer.
+ *
+ * However, with edges overlapping handles, this is not enough. There is additional fixing we need to do
+ * to make sure handles are (almost) always on top of edges
  */
 const updateZIndexes = (
     nodes: readonly Node<NodeData>[],
@@ -149,38 +152,36 @@ const updateZIndexes = (
         }
     }
 
+    // We can't update these until the loop is over, otherwise we change the data as we use it, which is a big no-no
     const nodesToAdjust = new Map<string, number>();
     // set the zIndex of all edges
     for (const e of edges) {
         edgesById.set(e.id, e);
-        let zIndex = Math.max(
-            nodesById.get(e.source)?.zIndex ?? STARTING_Z_INDEX,
-            nodesById.get(e.target)?.zIndex ?? STARTING_Z_INDEX
-        );
 
         const sourceNode = nodesById.get(e.source);
         const targetNode = nodesById.get(e.target);
+
+        let zIndex = Math.max(
+            sourceNode?.zIndex ?? STARTING_Z_INDEX,
+            targetNode?.zIndex ?? STARTING_Z_INDEX
+        );
 
         if (sourceNode && targetNode) {
             if (e.selected && zIndex < MIN_SELECTED_INDEX) {
                 zIndex += SELECTED_ADD;
                 // If an edge is selected, make the connected nodes the same zIndex so that the handle stays above
                 if (sourceNode.type !== 'iterator') {
-                    // We need to wait until after the loop to adjust the zIndex
                     nodesToAdjust.set(sourceNode.id, zIndex);
                 }
                 if (targetNode.type !== 'iterator') {
-                    // We need to wait until after the loop to adjust the zIndex
                     nodesToAdjust.set(targetNode.id, zIndex);
                 }
             } else if (sourceNode.selected || targetNode.selected) {
                 // If an edge is connected to a selected node, we need to make the other node it is connected to the same zIndex so that both handles stay above
                 if (targetNode.selected && targetNode.type !== 'iterator') {
-                    // We need to wait until after the loop to adjust the zIndex
                     nodesToAdjust.set(sourceNode.id, zIndex);
                 }
                 if (sourceNode.selected && sourceNode.type !== 'iterator') {
-                    // We need to wait until after the loop to adjust the zIndex
                     nodesToAdjust.set(targetNode.id, zIndex);
                 }
             }
